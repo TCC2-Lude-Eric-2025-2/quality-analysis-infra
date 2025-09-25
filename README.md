@@ -101,6 +101,8 @@ Mais informações na [documentação oficial](https://docs.sonarsource.com/sona
 
 4. Na tela seguinte selecione as opções "Define a specific setting for this project" e "Reference branch"
 
+![Zulip parte 2](assets/zulip_2.png)
+
 #### 3.3. Gere um token
 
 1. Na próxima tela, clique na opção "Locally" para gerar um token de aceso local
@@ -135,3 +137,5 @@ sudo chmod +x ./sonar-scan.sh
 ```bash
 ./sonar-scan.sh
 ```
+
+###### Após a configuração inicial, sempre que for necessário rodar novos scans, basta subir o sonar e o banco com `docker-compose up -d` e rodar o script de scan `./sonar-scan.sh`
