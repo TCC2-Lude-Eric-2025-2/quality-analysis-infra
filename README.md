@@ -30,9 +30,12 @@ A infraestrutura é construída com as seguintes tecnologias:
 
 * **Docker e Docker Compose**: Para orquestrar e gerenciar os contêineres do SonarQube e seus serviços dependentes (como o banco de dados).
 * **SonarQube**: A plataforma principal para a análise de qualidade de código.
-* **PySonar**: Um plugin que estende o SonarScanner para analisar o código Python com mais profundidade, garantindo que as regras de qualidade e segurança sejam aplicadas corretamente.
 * **SonarScanner**: A ferramenta de linha de comando que executa a análise em cada repositório de código.
 ---
+
+Com os arquivos disponibilizados nesse repositório, é possível:
+1. Provisionar o ambiente local do sonarqube (community) localmente com conexão à um banco PostgreSQL local para armazenamento das informações de scan. 
+1. Executar scans recorrentes no código do zulip usando a ferramenta sonar-scanner também em containers.
 
 ## Como Usar
 
@@ -40,26 +43,38 @@ A infraestrutura é construída com as seguintes tecnologias:
 
 Certifique-se de ter o **Docker** e o **Docker Compose** instalados em sua máquina.
 
-### 1. Configurar o Ambiente
+### 1. Clone o repositório do zulip
 
-Crie um arquivo `.env` na raiz do projeto, a partir do `.env.example`, e preencha as variáveis de ambiente necessárias.
+Clone o repositório (fork) do Zulip no diretório de sua preferência.
 
 ```bash
-cp .env.example .env
+  git clone git@github.com:TCC2-Lude-Eric-2025-2/zulip-11.0.git
+``` 
+
+Copie os arquivos `docker-compose.yaml`, `Dockerfile-sonarqube`, `sonar-project.properties` e `sonar-scan.sh`.
+
+###### A cópia pode ser manual, ou caso esteja no linux, executando o comando abaixo na raiz do repositório `quality-analysis-infra`
+
+
+```bash
+cp docker-compose.yaml Dockerfile-sonarqube sonar-project.properties sonar-scanner.sh {caminho/para/repositorio/local/zulip}
 ```
 
-Edite o arquivo .env com as configurações do banco de dados local e as credenciais desejadas. Uma sugestão é subir um banco de dados em container.
-
 ### 2. Iniciar a Infraestrutura
+
+#### 2.1 Subir o sonarqube e banco PostgreSQL
 
 Para subir os serviços, execute o seguinte comando:
 
 ```bash
 docker-compose up -d
 ```
+
 Este comando irá criar e iniciar os contêineres do SonarQube e do banco de dados em segundo plano (-d).
 
-3. Acessar o SonarQube
+### 3. Acessar o SonarQube e criar projeto Zulip V11.0
+
+#### 3.1. Acessar Sonar local
 
 Após alguns minutos, o SonarQube estará disponível no endereço http://localhost:9000.
 
@@ -68,16 +83,55 @@ Após alguns minutos, o SonarQube estará disponível no endereço http://localh
 
 Mais informações na [documentação oficial](https://docs.sonarsource.com/sonarqube-community-build/try-out-sonarqube/).
 
-# Executando o comando do pysonar no projeto
+#### 3.2. Criar projeto
+
+1. No canto superior direito da tela, clique no sinal de + (ou no botão Create Project dependendo da sua versão) e selecione Create local project.
+
+2. Preencha o campo Project key e Display name. Use o mesmo nome para ambos para manter a consistência, por exemplo:
+
+![Zulip parte 1](assets/zulip_1.png)
+
+- Project key: Zulip-11.0
+
+- Display name: Zulip-11.0 
+
+###### OBS: O Project key é um identificador único, então é crucial que ele seja preciso.
+
+3. Lembre-se se selecionar "Main branch name" como 11.0, para que os scans comparem o novo código sempre à branch de referência 11.0
+
+4. Na tela seguinte selecione as opções "Define a specific setting for this project" e "Reference branch"
+
+#### 3.3. Gere um token
+
+1. Na próxima tela, clique na opção "Locally" para gerar um token de aceso local
+2. Você verá a opção Provide a token. Clique em Generate a project token.
+3. Dê um nome ao token, como Zulip-11.0-token.
+4. Clique em Generate novamente.
+
+![zulip parte 3](assets/zulip_3.png)
+
+O token será exibido. Copie-o imediatamente e salve em um lugar seguro. Você não conseguirá vê-lo novamente.
+
+### 4. Executar o scan
+
+Navegue para a raiz do seu repositório local do zulip.
+
 ```bash
-pysonar \
-  --sonar-host-url=http://localhost:9000 \
-  --sonar-token=[token_do_projeto] \
-  --sonar-project-key=[nome_do_projeto]
+cd {caminho/para/repositorio/local/zulip}
 ```
 
+1. Edite o arquivo `sonar-project.properties` e substitua {project_token} com o token do seu projeto.
 
-- sonar.projectKey: Um identificador único para o seu projeto no SonarQube.
-- sonar.sources: O diretório do seu código-fonte.
-- sonar.host.url: O endereço da sua instância do SonarQube.
-- sonar.login: Um token de autenticação gerado no SonarQube para o seu usuário.
+###### OBS: Caso tenha criado um projeto com um nome diferente, altere os respectivos valores para nome e versão do projeto também.
+
+2. Adicione permissão de execução para o seu usuário no script shell de scan:
+
+```bash
+sudo chmod +x ./sonar-scan.sh
+```
+
+3. Por fim, execute o scan:
+
+```bash
+./sonar-scan.sh
+```
