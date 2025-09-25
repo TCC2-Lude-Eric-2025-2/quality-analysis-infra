@@ -1,0 +1,7 @@
+FROM sonarsource/sonar-scanner-cli:latest
+
+# Set up zulip directory in container
+WORKDIR /zulip
+
+# Copy zulip's code to scan container
+COPY . .
